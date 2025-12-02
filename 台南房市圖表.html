@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2025台南房市趨勢圖 - 宏國地政研究院</title>
+    
+    <!-- 核心庫 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prop-types/15.8.1/prop-types.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/recharts/2.12.7/Recharts.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
+        body { font-family: 'Noto Sans TC', sans-serif; background-color: #f1f5f9; }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+        }
+        
+        /* 分享圖卡專用樣式 */
+        .share-card-mode {
+            width: 100%;
+            max-width: 450px; 
+            margin: 0 auto;
+            border-radius: 0;
+            box-shadow: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        // 檢查圖表庫
+        if (typeof Recharts === 'undefined') {
+            setTimeout(() => window.location.reload(), 2000);
+        }
+
+        const { useState, useEffect, useRef } = React;
+        const { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList } = Recharts;
+
+        const TainanHousingChart = () => {
+            const [isShareMode, setIsShareMode] = useState(false);
+
+            // 加入 features (生活機能/議題)
+            const data = [
+                { 
+                    name: '東區', min: 28, max: 69.7, range: [28, 69.7], type: '市區', fill: '#4f46e5',
+                    features: ['南紡購物中心', '平實轉運站', '明星學區林立']
+                },
+                { 
+                    name: '北區', min: 34, max: 63.1, range: [34, 63.1], type: '市區', fill: '#7c3aed',
+                    features: ['鄭子寮重劃區', 'Costco商圈', '花園夜市']
+                },
+                { 
+                    name: '中西區', min: 30, max: 57, range: [30, 57], type: '市區', fill: '#db2777',
+                    features: ['新光三越新天地', '美術館/河樂廣場', '觀光熱點']
+                },
+                { 
+                    name: '安平', min: 20, max: 48, range: [20, 48], type: '市區', fill: '#0891b2',
+                    features: ['市政中心', '亞果遊艇城', '五期重劃區']
+                },
+                { 
+                    name: '歸仁(高鐵)', min: 24, max: 54.1, range: [24, 54.1], type: '郊區', fill: '#d97706',
+                    features: ['高鐵台南站', '三井Outlet', '沙崙綠能科學城']
+                },
+                { 
+                    name: '永康', min: 25, max: 53.9, range: [25, 53.9], type: '郊區', fill: '#059669',
+                    features: ['新總圖/東橋', '鹽行重劃區', '砲校遷移議題']
+                },
+                { 
+                    name: '善化/新市', min: 26, max: 52.6, range: [26, 52.6], type: '郊區', fill: '#65a30d',
+                    features: ['南科園區核心', 'LM特區', '台積電效應']
+                },
+                { 
+                    name: '安南', min: 25, max: 49, range: [25, 49], type: '郊區', fill: '#2563eb',
+                    features: ['商60副都心', '九份子低碳區', '北外環道路']
+                },
+            ];
+
+            // 自定義 Tooltip：顯示機能與議題
+            const CustomTooltip = ({ active, payload, label }) => {
+                if (active && payload && payload.length) {
+                    const d = payload[0].payload;
+                    return (
+                        <div className="bg-white/95 p-4 rounded-xl shadow-2xl border border-slate-200 text-sm max-w-[200px]">
+                            <div className="flex justify-between items-center mb-2 border-b border-slate-100 pb-2">
+                                <span className="font-bold text-lg text-slate-800">{label}</span>
+                                <span className={`text-xs px-2 py-0.5 rounded text-white ${d.type === '市區' ? 'bg-indigo-500' : 'bg-green-500'}`}>{d.type}</span>
+                            </div>
+                            
+                            <div className="flex justify-between mb-1">
+                                <span className="text-slate-500">最高價</span>
+                                <span className="font-bold text-red-500">{d.max} 萬/坪</span>
+                            </div>
+                            <div className="flex justify-between mb-3">
+                                <span className="text-slate-500">地板價</span>
+                                <span className="font-bold text-green-600">{d.min} 萬/坪</span>
+                            </div>
+
+                            <div className="bg-slate-50 p-2 rounded-lg">
+                                <p className="text-xs font-bold text-slate-500 mb-1">🔥 區域亮點</p>
+                                <ul className="list-disc list-inside text-xs text-slate-700 space-y-0.5">
+                                    {d.features.map((feature, idx) => (
+                                        <li key={idx}>{feature}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                        </div>
+                    );
+                }
+                return null;
+            };
+
+            return (
+                <div className={`min-h-screen ${isShareMode ? 'bg-white' : 'bg-slate-100'} flex flex-col items-center justify-center p-4`}>
+                    
+                    {/* 控制按鈕區 (截圖時隱藏) */}
+                    {!isShareMode && (
+                        <div className="mb-6 flex gap-4">
+                            <button 
+                                onClick={() => setIsShareMode(true)}
+                                className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-full shadow-lg flex items-center gap-2 transform transition hover:scale-105"
+                            >
+                                📸 產生社群分享圖卡 (點我)
+                            </button>
+                        </div>
+                    )}
+
+                    {isShareMode && (
+                        <div className="fixed top-4 left-4 z-50">
+                            <button 
+                                onClick={() => setIsShareMode(false)}
+                                className="bg-slate-600 text-white px-4 py-2 rounded-lg text-sm shadow-md"
+                            >
+                                ⬅️ 返回互動模式
+                            </button>
+                        </div>
+                    )}
+
+                    {/* 主卡片容器 */}
+                    <div className={`bg-white overflow-hidden flex flex-col ${isShareMode ? 'share-card-mode' : 'w-full max-w-2xl rounded-2xl shadow-2xl'}`}>
+                        
+                        {/* 頂部標題 */}
+                        <div className="gradient-bg p-8 text-white relative">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <span className="bg-white/20 text-xs px-2 py-1 rounded-md backdrop-blur-sm border border-white/20">2025 台南房市報告</span>
+                                    <h1 className="text-3xl font-black mt-2 leading-tight">市區 vs 郊區<br/>機能大解析</h1>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-4xl font-bold opacity-20">TN</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 圖表區 */}
+                        <div className="p-6 flex-1">
+                            <div className="flex justify-between items-end mb-4">
+                                <h2 className="text-slate-800 font-bold text-lg border-l-4 border-blue-600 pl-3">區域單價與核心議題</h2>
+                                <span className="text-xs text-slate-400 bg-slate-100 px-2 py-1 rounded">更新: 113/11</span>
+                            </div>
+
+                            <div className="h-[450px] w-full">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart 
+                                        layout="vertical" 
+                                        data={data} 
+                                        margin={{ top: 0, right: 45, left: 10, bottom: 0 }}
+                                        barSize={isShareMode ? 20 : 24}
+                                    >
+                                        <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#f1f5f9" />
+                                        <XAxis type="number" hide domain={[0, 75]} />
+                                        <YAxis 
+                                            dataKey="name" 
+                                            type="category" 
+                                            width={85} 
+                                            tick={{fontSize: 13, fill: '#334155', fontWeight: 600}} 
+                                            axisLine={false}
+                                            tickLine={false}
+                                        />
+                                        
+                                        {/* 在一般模式顯示 Tooltip，分享模式不顯示以免擋住 */}
+                                        {!isShareMode && <Tooltip content={<CustomTooltip />} cursor={{fill: '#f8fafc'}} />}
+                                        
+                                        <Bar dataKey="min" stackId="a" fill="transparent" />
+                                        <Bar dataKey="range" stackId="a" radius={[0, 4, 4, 0]}>
+                                            {data.map((entry, index) => (
+                                                <cell key={`cell-${index}`} fill={entry.fill} />
+                                            ))}
+                                            <LabelList dataKey="max" position="right" fill="#64748b" fontSize={12} fontWeight="bold" formatter={(val) => `${val}`} />
+                                        </Bar>
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+
+                            {/* 在分享模式下，直接列出重點區域機能 (因為截圖看不到 Tooltip) */}
+                            {isShareMode && (
+                                <div className="mt-4 grid grid-cols-2 gap-2 text-[10px] text-slate-600">
+                                    <div className="bg-slate-50 p-2 rounded border border-slate-100">
+                                        <strong className="text-indigo-600">東區</strong>: 南紡、平實轉運站
+                                    </div>
+                                    <div className="bg-slate-50 p-2 rounded border border-slate-100">
+                                        <strong className="text-green-600">永康</strong>: 總圖、鹽行重劃區
+                                    </div>
+                                    <div className="bg-slate-50 p-2 rounded border border-slate-100">
+                                        <strong className="text-orange-500">歸仁</strong>: 高鐵、三井Outlet
+                                    </div>
+                                    <div className="bg-slate-50 p-2 rounded border border-slate-100">
+                                        <strong className="text-blue-500">安南</strong>: 商60、北外環道路
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* 數據洞察 (一般模式) */}
+                            {!isShareMode && (
+                                <div className="mt-4 bg-yellow-50 p-3 rounded-lg border border-yellow-100 flex items-start gap-2">
+                                    <span className="text-xl">💡</span>
+                                    <p className="text-xs text-slate-700 leading-relaxed">
+                                        <strong>選房指南：</strong>市區擁有成熟機能（百貨、學區），但價格較高；郊區則有重劃區與建設議題（如商60、高鐵），增值潛力強。
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* 底部行動呼籲 (圖片版 QR Code) */}
+                        <div className="bg-slate-900 p-6 text-white relative overflow-hidden">
+                            <div className="flex items-center gap-6 relative z-10">
+                                {/* QR Code 容器：讀取圖片 */}
+                                <div className="bg-white p-2 rounded-lg shadow-lg shrink-0 w-[100px] h-[100px] flex items-center justify-center overflow-hidden">
+                                    <img 
+                                        src="./S__26034281.jpg" 
+                                        alt="掃碼加入" 
+                                        className="w-full h-full object-contain"
+                                        onError={(e) => {
+                                            e.target.style.display = 'none';
+                                            e.target.parentNode.innerHTML = '<span class="text-black text-xs text-center font-bold">請確認圖片<br/>檔名正確</span>';
+                                        }}
+                                    />
+                                </div>
+                                
+                                {/* 文字引導 */}
+                                <div>
+                                    <p className="text-yellow-400 font-bold text-xs mb-1 tracking-wider">限時免費加入</p>
+                                    <h3 className="text-xl font-bold mb-2">宏國地政研究院</h3>
+                                    <div className="inline-flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-full border border-white/20">
+                                        <span className="text-xs">長按圖片 👉 掃碼加入社群</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            {/* 背景裝飾 */}
+                            <div className="absolute right-[-20px] bottom-[-40px] text-[120px] opacity-5 font-black rotate-12">HOUSE</div>
+                        </div>
+                    </div>
+
+                    {isShareMode && (
+                        <p className="mt-4 text-slate-400 text-sm text-center">
+                            👆 請直接截圖上方卡片，傳到 LINE 給朋友
+                        </p>
+                    )}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<TainanHousingChart />);
+    </script>
+</body>
+</html>
